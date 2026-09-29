@@ -1,5 +1,7 @@
 # 智能解压工作台
 
+当前版本：v1.1
+
 面向 Windows 的批量解压工具，使用 PySide6 构建界面，可将压缩文件或文件夹拖入任务列表，并调用本机安装的 WinRAR 或 7-Zip 处理。
 
 ## 功能
@@ -8,6 +10,7 @@
 - 支持常见压缩格式、分卷、伪装后缀和嵌套压缩包。
 - 支持临时密码本优先匹配、普通密码本兜底，以及来源信息展示。
 - 可在设置窗口指定 WinRAR、7-Zip 和密码本路径。
+- 可在设置窗口检查 GitHub 最新正式版本；发现新版本后打开对应发布页。
 
 ## 使用
 
@@ -16,7 +19,7 @@
 3. 双击“智能解压工作台.exe”，将待处理文件或文件夹拖入任务列表。
 4. 点击“开始处理”。如果未自动发现解压引擎，在“设置”中指定其可执行文件路径。
 
-公开 Git 仓库不包含本机密码本原件、个人配置或运行日志。Release 附件使用发布者确认已移除个人密码和来源记录的版本。程序仍可在“设置”中指向你本机的密码本文件；请勿将含个人信息的文件提交到仓库。
+公开 Git 仓库不包含本机密码本原件、个人配置或运行日志。Release 附件不含个人密码记录；程序仍可在“设置”中指向你本机的密码本文件，请勿将含个人信息的文件提交到仓库。
 
 ## 从源码运行
 
@@ -31,9 +34,18 @@ python "智能解压V1.0.py"
 
 ```powershell
 python -m pip install PyInstaller
-python -m PyInstaller --noconfirm --distpath "dist" --workpath "build" "智能解压V1.0.spec"
-Copy-Item "package_resources\config.json" "dist\智能解压工作台\config.json"
-Copy-Item "package_resources\使用说明.txt" "dist\智能解压工作台\使用说明.txt"
+python -m PyInstaller --noconfirm --distpath "dist_v1.1" --workpath "build_v1.1" "智能解压V1.0.spec"
+$release = "dist_v1.1\智能解压工作台"
+Copy-Item "package_resources\config.json" "$release\config.json"
+Copy-Item "package_resources\使用说明.txt" "$release\使用说明.txt"
+New-Item -ItemType File -Path "$release\密码本.txt" | Out-Null
+New-Item -ItemType File -Path "$release\临时密码本.txt" | Out-Null
+```
+
+## 测试
+
+```powershell
+python -m unittest discover -s tests
 ```
 
 本仓库不提供个人密码本。若需要密码本功能，请在本地建立并配置自己的文件；不要将它们加入版本控制。

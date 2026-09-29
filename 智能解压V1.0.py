@@ -9,8 +9,9 @@ import datetime
 import shutil  
 import time 
 import webbrowser
-from PySide6.QtCore import QEvent, QObject, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontDatabase, QTextCharFormat, QTextCursor
+from PySide6.QtCore import QEvent, QObject, Qt, QUrl, Signal
+from PySide6.QtGui import QColor, QDesktopServices, QFont, QFontDatabase, QTextCharFormat, QTextCursor
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
@@ -112,6 +113,11 @@ class SourceLinkEdit(QLineEdit):
 
 
 class DecompressApp(QObject):
+    APP_VERSION = "1.1"
+    LATEST_RELEASE_API = "https://api.github.com/repos/lehuyt/smart-unzip-workbench/releases/latest"
+    RELEASE_PAGE_PREFIX = "/lehuyt/smart-unzip-workbench/releases/"
+    UPDATE_REQUEST_TIMEOUT_MS = 10000
+
     log_signal = Signal(str, str, str)
     task_status_signal = Signal(int, str, str)
     task_progress_signal = Signal(int, str)
@@ -777,7 +783,14 @@ class DecompressApp(QObject):
         self._apply_card_shadow(card)
 
         footer = QHBoxLayout()
+        footer.setSpacing(8)
         footer.addWidget(self._make_button(dialog, "查看日志", self.open_debug_log_ui, "secondary"))
+        update_button = self._make_button(dialog, "检查更新", None, "secondary")
+        update_status = QLabel("")
+        update_status.setObjectName("Muted")
+        update_status.setMinimumWidth(150)
+        footer.addWidget(update_button)
+        footer.addWidget(update_status, 1)
         footer.addStretch(1)
         cancel = self._make_button(dialog, "取消", dialog.reject, "ghost")
         save_button = self._make_button(dialog, "保存设置", None, "primary")
@@ -794,8 +807,114 @@ class DecompressApp(QObject):
             self.log("配置已更新并保存", "SUCCESS")
 
         save_button.clicked.connect(save)
+        update_manager = QNetworkAccessManager(dialog)
+        update_button.clicked.connect(
+            lambda _checked=False: self.check_for_updates(
+                dialog, update_manager, update_button, update_status
+            )
+        )
         dialog.resize(780, 520)
         dialog.exec()
+
+    @staticmethod
+    def parse_release_version(value):
+        """Parse a numeric release tag such as v1.2.0 into a comparable tuple."""
+        match = re.fullmatch(r"[vV]?(\d+(?:\.\d+)*)", str(value or "").strip())
+        if not match:
+            return None
+        parts = [int(part) for part in match.group(1).split(".")]
+        while len(parts) > 1 and parts[-1] == 0:
+            parts.pop()
+        return tuple(parts)
+
+    @classmethod
+    def is_newer_release(cls, current_version, release_tag):
+        current = cls.parse_release_version(current_version)
+        latest = cls.parse_release_version(release_tag)
+        if current is None or latest is None:
+            return None
+        return latest > current
+
+    @classmethod
+    def is_valid_release_url(cls, value):
+        url = QUrl(str(value or ""))
+        return (
+            url.scheme().lower() == "https"
+            and url.host().lower() == "github.com"
+            and url.path().startswith(cls.RELEASE_PAGE_PREFIX)
+        )
+
+    def check_for_updates(self, dialog, manager, button, status_label):
+        button.setEnabled(False)
+        status_label.setStyleSheet(f"color: {self.colors['muted']};")
+        status_label.setText("正在检查...")
+
+        request = QNetworkRequest(QUrl(self.LATEST_RELEASE_API))
+        request.setRawHeader(b"Accept", b"application/vnd.github+json")
+        request.setRawHeader(b"User-Agent", b"SmartUnzipWorkbench")
+        request.setTransferTimeout(self.UPDATE_REQUEST_TIMEOUT_MS)
+        reply = manager.get(request)
+
+        def finish_check():
+            status_code = reply.attribute(
+                QNetworkRequest.Attribute.HttpStatusCodeAttribute
+            )
+            response_bytes = bytes(reply.readAll())
+            network_error = reply.error()
+            reply.deleteLater()
+            button.setEnabled(True)
+
+            if network_error != QNetworkReply.NetworkError.NoError:
+                if status_code in (403, 429):
+                    message = "GitHub 请求受限，请稍后重试。"
+                elif status_code == 404:
+                    message = "GitHub 上暂时没有正式版本。"
+                else:
+                    message = "检查失败，请检查网络后重试。"
+                status_label.setStyleSheet(f"color: {self.colors['danger']};")
+                status_label.setText(message)
+                return
+
+            try:
+                release = json.loads(response_bytes.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                status_label.setStyleSheet(f"color: {self.colors['danger']};")
+                status_label.setText("GitHub 返回了无法识别的数据。")
+                return
+            if not isinstance(release, dict):
+                status_label.setStyleSheet(f"color: {self.colors['danger']};")
+                status_label.setText("GitHub 返回了无法识别的数据。")
+                return
+
+            latest_tag = str(release.get("tag_name", "") or "").strip()
+            has_update = self.is_newer_release(self.APP_VERSION, latest_tag)
+            release_url_text = str(release.get("html_url", "") or "")
+            release_url = QUrl(release_url_text)
+            if (
+                has_update is None
+                or not self.is_valid_release_url(release_url_text)
+            ):
+                status_label.setStyleSheet(f"color: {self.colors['danger']};")
+                status_label.setText("GitHub Release 信息无效。")
+                return
+
+            if has_update:
+                status_label.setStyleSheet(f"color: {self.colors['success']};")
+                if self.open_release_page(release_url):
+                    status_label.setText(f"发现新版本 {latest_tag}，已打开发布页。")
+                else:
+                    status_label.setStyleSheet(f"color: {self.colors['danger']};")
+                    status_label.setText("发现新版本，但无法打开浏览器。")
+                return
+
+            status_label.setStyleSheet(f"color: {self.colors['success']};")
+            status_label.setText(f"当前已是最新版本（v{self.APP_VERSION}）。")
+
+        reply.finished.connect(finish_check)
+
+    @staticmethod
+    def open_release_page(url):
+        return QDesktopServices.openUrl(url)
 
     def _browse_path(self, target):
         dialog = QFileDialog(target.window(), "选择文件")

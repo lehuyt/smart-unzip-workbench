@@ -9,6 +9,9 @@ datas = [
     (str(project_dir / "package_resources" / "config.json"), "."),
     (str(project_dir / "package_resources" / "使用说明.txt"), "."),
 ]
+personal_book_names = {"密码本.txt", "临时密码本.txt"}
+if any(Path(source).name in personal_book_names for _destination, source in datas):
+    raise RuntimeError("个人密码本不得作为 PyInstaller 内嵌资源")
 
 a = Analysis(
     [str(project_dir / "智能解压V1.0.py")],
