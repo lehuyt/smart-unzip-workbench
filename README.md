@@ -1,0 +1,43 @@
+# 智能解压工作台
+
+面向 Windows 的批量解压工具，使用 PySide6 构建界面，可将压缩文件或文件夹拖入任务列表，并调用本机安装的 WinRAR 或 7-Zip 处理。
+
+## 功能
+
+- 支持拖放文件/文件夹、多个任务排队、暂停后继续处理。
+- 支持常见压缩格式、分卷、伪装后缀和嵌套压缩包。
+- 支持临时密码本优先匹配、普通密码本兜底，以及来源信息展示。
+- 可在设置窗口指定 WinRAR、7-Zip 和密码本路径。
+
+## 使用
+
+1. 从 GitHub 的 **Releases** 下载 Windows 发布 ZIP，并解压整个“智能解压工作台”目录。
+2. 在电脑上安装 WinRAR 或 7-Zip；它们不包含在本程序中。
+3. 双击“智能解压工作台.exe”，将待处理文件或文件夹拖入任务列表。
+4. 点击“开始处理”。如果未自动发现解压引擎，在“设置”中指定其可执行文件路径。
+
+公开 Git 仓库不包含本机密码本原件、个人配置或运行日志。Release 附件使用发布者确认已移除个人密码和来源记录的版本。程序仍可在“设置”中指向你本机的密码本文件；请勿将含个人信息的文件提交到仓库。
+
+## 从源码运行
+
+需要 Windows、Python 3.14+ 和 PySide6。安装依赖后运行：
+
+```powershell
+python -m pip install PySide6
+python "智能解压V1.0.py"
+```
+
+## 本地构建
+
+```powershell
+python -m pip install PyInstaller
+python -m PyInstaller --noconfirm --distpath "dist" --workpath "build" "智能解压V1.0.spec"
+Copy-Item "package_resources\config.json" "dist\智能解压工作台\config.json"
+Copy-Item "package_resources\使用说明.txt" "dist\智能解压工作台\使用说明.txt"
+```
+
+本仓库不提供个人密码本。若需要密码本功能，请在本地建立并配置自己的文件；不要将它们加入版本控制。
+
+## 设计规范
+
+新增或调整页面前，请先阅读 [design.md](design.md)，并保持界面风格统一。

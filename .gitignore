@@ -1,0 +1,19 @@
+# Personal password data and machine-specific configuration
+/密码本.txt
+/临时密码本.txt
+/config.json
+
+# Logs, caches, build outputs, and local test data
+*.log
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+/build*/
+/dist*/
+/解压实例/
+/88.txt
+/HANDOFF_GPT6.md
+
+# Release archives are uploaded as GitHub Release assets, not Git blobs
+*.zip
