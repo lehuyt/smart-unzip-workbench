@@ -121,11 +121,11 @@ class UpdateCheckAsyncTests(unittest.TestCase):
         self.assertEqual(opened, [])
 
     def test_newer_release_opens_github_page(self):
-        url = "https://github.com/lehuyt/smart-unzip-workbench/releases/tag/v1.2"
+        url = "https://github.com/lehuyt/smart-unzip-workbench/releases/tag/v1.3"
         status, enabled, opened = self.run_local_check(
-            payload={"tag_name": "v1.2", "html_url": url}
+            payload={"tag_name": "v1.3", "html_url": url}
         )
-        self.assertIn("发现新版本 v1.2", status)
+        self.assertIn("发现新版本 v1.3", status)
         self.assertTrue(enabled)
         self.assertEqual(opened, [url])
 

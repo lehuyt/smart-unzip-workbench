@@ -1,6 +1,6 @@
 # 智能解压工作台
 
-当前版本：v1.1
+当前版本：v1.2
 
 面向 Windows 的批量解压工具，使用 PySide6 构建界面，可将压缩文件或文件夹拖入任务列表，并调用本机安装的 WinRAR 或 7-Zip 处理。
 
@@ -11,6 +11,8 @@
 - 支持临时密码本优先匹配、普通密码本兜底，以及来源信息展示。
 - 可在设置窗口指定 WinRAR、7-Zip 和密码本路径。
 - 可在设置窗口检查 GitHub 最新正式版本；发现新版本后打开对应发布页。
+- 工具栏“工具”窗口可拖入文件，快速修改/添加后缀或清除扩展名中的“删”字。
+- “清除选中”和“清空列表”使用带边框的次级按钮样式。
 
 ## 使用
 
@@ -34,8 +36,8 @@ python "智能解压V1.0.py"
 
 ```powershell
 python -m pip install PyInstaller
-python -m PyInstaller --noconfirm --distpath "dist_v1.1" --workpath "build_v1.1" "智能解压V1.0.spec"
-$release = "dist_v1.1\智能解压工作台"
+python -m PyInstaller --noconfirm --distpath "dist_v1.2" --workpath "build_v1.2" "智能解压V1.0.spec"
+$release = "dist_v1.2\智能解压工作台"
 Copy-Item "package_resources\config.json" "$release\config.json"
 Copy-Item "package_resources\使用说明.txt" "$release\使用说明.txt"
 Copy-Item "密码本.txt" "$release\密码本.txt"

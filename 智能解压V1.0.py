@@ -37,6 +37,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from suffix_tool import FileSuffixModifierDialog
 
 
 class TaskTable(QTableWidget):
@@ -113,7 +114,7 @@ class SourceLinkEdit(QLineEdit):
 
 
 class DecompressApp(QObject):
-    APP_VERSION = "1.1"
+    APP_VERSION = "1.2"
     LATEST_RELEASE_API = "https://api.github.com/repos/lehuyt/smart-unzip-workbench/releases/latest"
     RELEASE_PAGE_PREFIX = "/lehuyt/smart-unzip-workbench/releases/"
     UPDATE_REQUEST_TIMEOUT_MS = 10000
@@ -159,6 +160,7 @@ class DecompressApp(QObject):
         self.resume_index = 0
         self.process_thread = None
         self.engine_type = 1
+        self.suffix_tool_window = None
         # 按原有功能固定为：处理完成后自动还原被清理的文件名。
         self.auto_undo_enabled = True
         
@@ -934,6 +936,13 @@ class DecompressApp(QObject):
             button.clicked.connect(command)
         return button
 
+    def open_suffix_tool(self):
+        if self.suffix_tool_window is None:
+            self.suffix_tool_window = FileSuffixModifierDialog(self.root)
+        self.suffix_tool_window.show()
+        self.suffix_tool_window.raise_()
+        self.suffix_tool_window.activateWindow()
+
     def update_overview(self):
         """刷新当前布局中的任务数量徽标。"""
         self.overview_signal.emit()
@@ -964,8 +973,10 @@ class DecompressApp(QObject):
         self.engine_group.idToggled.connect(self._on_engine_changed)
         toolbar_layout.addWidget(engine_group_frame)
         toolbar_layout.addSpacing(6)
-        toolbar_layout.addWidget(self._make_button(toolbar, "清除选中", self.clear_selected, "ghost"))
-        toolbar_layout.addWidget(self._make_button(toolbar, "清空列表", self.clear_list, "ghost"))
+        toolbar_layout.addWidget(self._make_button(toolbar, "清除选中", self.clear_selected, "secondary"))
+        toolbar_layout.addWidget(self._make_button(toolbar, "清空列表", self.clear_list, "secondary"))
+        self.btn_tools = self._make_button(toolbar, "工具", self.open_suffix_tool, "secondary")
+        toolbar_layout.addWidget(self.btn_tools)
         toolbar_layout.addStretch(1)
 
         self.btn_start = self._make_button(toolbar, "开始处理", self.start_thread, "primary", 12)
